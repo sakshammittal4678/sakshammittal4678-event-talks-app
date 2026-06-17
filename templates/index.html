@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BigQuery Release Notes</title>
+  <meta name="description" content="Browse and share the latest Google BigQuery release notes. Fetch, read, and tweet about updates instantly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <!-- ── Sidebar ─────────────────────────────── -->
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#4f8ef7"/>
+        <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#4f8ef7" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>BigQuery<br/><strong>Release Notes</strong></span>
+    </div>
+
+    <div class="sidebar-stats" id="sidebar-stats">
+      <div class="stat-item">
+        <span class="stat-num" id="stat-total">—</span>
+        <span class="stat-label">Total Updates</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-latest">—</span>
+        <span class="stat-label">Latest Entry</span>
+      </div>
+    </div>
+
+    <div class="sidebar-filter">
+      <p class="filter-label">Filter by type</p>
+      <div id="filter-pills"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <a href="https://cloud.google.com/bigquery/docs/release-notes" target="_blank" rel="noopener">
+        Official Docs ↗
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── Main ────────────────────────────────── -->
+  <main id="main">
+
+    <!-- Top bar -->
+    <header id="topbar">
+      <div class="topbar-left">
+        <h1>Release Notes</h1>
+        <span id="last-refreshed"></span>
+      </div>
+      <div class="topbar-right">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search updates…" autocomplete="off" />
+        </div>
+        <button id="refresh-btn" class="btn-refresh" title="Refresh feed">
+          <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 12a8 8 0 0 1 14.93-4H15m3.93-4v4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 12a8 8 0 0 1-14.93 4H9m-5.93 4v-4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Feed area -->
+    <div id="feed-area">
+      <div id="skeleton-container"></div>
+      <div id="entries-container"></div>
+      <div id="empty-state" class="hidden">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
+          <circle cx="32" cy="32" r="28" stroke="#334155" stroke-width="2"/>
+          <path d="M22 32h20M32 22v20" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p>No matching updates found.</p>
+      </div>
+      <div id="error-banner" class="hidden">
+        <span id="error-text"></span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── Tweet Modal ────────────────────────── -->
+  <div id="tweet-overlay" class="hidden" role="dialog" aria-modal="true" aria-label="Compose tweet">
+    <div id="tweet-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.912-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span>Compose Tweet</span>
+        </div>
+        <button id="modal-close" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="tweet-meta" id="tweet-meta-date"></div>
+        <textarea id="tweet-text" maxlength="280" rows="5" spellcheck="true"></textarea>
+        <div class="tweet-footer">
+          <span id="char-counter" class="char-count">0 / 280</span>
+          <div class="tweet-actions">
+            <button id="tweet-copy-btn" class="btn-secondary">Copy Text</button>
+            <a id="tweet-post-btn" href="#" target="_blank" rel="noopener" class="btn-tweet">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.912-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              Post on X
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
